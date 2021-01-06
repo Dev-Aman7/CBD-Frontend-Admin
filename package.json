@@ -7,7 +7,7 @@
 		"@ckeditor/ckeditor5-build-classic": "^18.0.0",
 		"@ckeditor/ckeditor5-react": "^2.1.0",
 		"antd": "^4.1.4",
-		"axios": "^0.19.2",
+		"axios": "^0.21.1",
 		"bootstrap": "^4.3.1",
 		"cogo-toast": "^4.2.3",
 		"font-awesome": "^4.7.0",
