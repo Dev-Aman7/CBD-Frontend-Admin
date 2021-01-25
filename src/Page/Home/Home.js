@@ -1,322 +1,683 @@
-import React, { Component } from "react";
+import React, { Component, PureComponent } from "react";
 import { connect } from "react-redux";
-import { Card, Button, Spinner } from "react-bootstrap";
+import { Card, Button, Spinner, Form, Modal } from "react-bootstrap";
 import Accordion from "react-bootstrap/Accordion";
 import TextForm from "../../App/components/TextForm";
 import ImageForm from "../../App/components/ImageForm";
 import * as actionCreators from "../../store/actions/home";
 import cogoToast from "cogo-toast";
-const Images = [
-	["Banner-Image-1.png", "Banner-Image-2.png", "Logo.png"],
-	[],
-	["Bundle-Image.png"],
-	[],
-	["Consult-Image.png", "Wellness-Image.png"],
-];
+import AceEditor from "react-ace";
+import FileBase from "react-file-base64";
+import "antd/dist/antd.css";
+import { Collapse } from "antd";
+const { Panel } = Collapse;
 const Heading = [
-	"Banner",
-	"Category Slider",
-	"Third Section",
-	"Bundles Slider",
-	"Fifith Section",
+  "Banner",
+  "Logo",
+  "Category Slider",
+  "Second Section",
+  "Third Section",
+  "Fourth Section",
 ];
 const SubHeading = [
-	["Title", "Content", "Button Text"],
-	["Title"],
-	["Big Title", "Title", "Content", "Button Text"],
-	["Title", "Sub Title", "Button Text"],
-	["Title", "Content", "Button Text"],
+  ["Title", "Content", "Button Text"],
+  ,
+  ["Title", "Button Text"],
+  ["Title", "Sub Title"],
+  ["Title", "Sub Title", "Content", "Button Text"],
+  ["Title", "Content"],
 ];
-class Home extends Component {
-	constructor(props) {
-		super(props);
-		this.state = {
-			data: {
-				banner: {
-					title: "",
-					content: "",
-					btnText: "",
-				},
-				categorySlider: {
-					title: "",
-				},
-				thirdSection: {
-					bigTitle: "",
-					title: "",
-					content: "",
-					btnText: "",
-				},
-				bundlesSlider: {
-					title: "",
-					subTitle: "",
-					btnText: "",
-				},
-				fifthSection: {
-					title: "",
-					content: "",
-					btnText: "",
-				},
-			},
-			banner: [
-				{ image: "", file: "", imageName: "Banner-Image-1" },
-				{ image: "", file: "", imageName: "Banner-Image-2" },
-				{ image: "", file: "", imageName: "Logo" },
-			],
-			thirdSection: [{ image: "", file: "", imageName: "Bundle-Image" }],
-			fifthSection: [
-				{ image: "", file: "", imageName: "Consult-Image" },
-				{ image: "", file: "", imageName: "Wellness-Image-1" },
-			],
+class Home extends PureComponent {
+  constructor(props) {
+    super(props);
+    this.state = {
+      data: {
+        logo: {
+          images: [
+            {
+              src: "",
+              name: "",
+            },
+            {
+              src: "",
+              name: "",
+            },
+            {
+              src: "",
+              name: "",
+            },
+          ],
+        },
+        banner: [
+          {
+            title: "",
+            content: "",
+            btnText: "",
+            hide: false,
+            images: {
+              name: "",
+              src: "",
+            },
+          },
+        ],
+        categorySlider: {
+          title: "",
+          btnText: "",
+          hide: false,
+          images: [],
+        },
+        secondSection: {
+          title: "",
+          bigTitle: "",
+          hide: false,
+          images: [],
+        },
+        thirdSection: {
+          bigTitle: "",
+          title: "",
+          content: "",
+          btnText: "",
+          hide: false,
+          images: [
+            {
+              src: "",
+              name: "",
+            },
+          ],
+        },
+        fourthSection: {
+          title: "",
+          content: "",
+          hide: false,
+          images: [],
+        },
+      },
+      isOpen: false,
+      loading: true,
+      file: "",
+      imageName: "",
+      imagePreviewUrl: "",
+      formData: {
+        title: "",
+        content: "",
+        btnText: "",
+        hide: false,
+      },
+      logo: [
+        { image: "", file: "", imageName: "" },
+        { image: "", file: "", imageName: "" },
+        { image: "", file: "", imageName: "" },
+      ],
+      banner: [],
+      thirdSection: [{ image: "", file: "", imageName: "" }],
+      secondSection: [{ image: "", file: "", imageName: "" }],
+      fourthSection: [{ image: "", file: "", imageName: "" }],
+    };
 
-			loading: true,
-			file: "",
-			imagePreviewUrl: "",
-			imageName: "",
-		};
+    this.handleImageChange = this.handleImageChange.bind(this);
+  }
 
-		this.handleImageChange = this.handleImageChange.bind(this);
-	}
+  handleImageChange(e, index, mainIndex, section) {
+    let reader = new FileReader();
+    let file = e.target.files[0];
+    let currentData, imageData;
+    reader.onloadend = () => {
+      imageData = [...this.state[section]];
+      if (section === "banner") {
+        currentData = [...this.state.data[section]];
+        currentData[mainIndex].images = {
+          name: file.name,
+          src: reader.result,
+        };
+        imageData[mainIndex].file = file;
+        imageData[mainIndex].image = reader.result;
+      } else {
+        console.log(file);
+        currentData = { ...this.state.data[section] };
+        if (section === "logo") {
+          currentData.images[index].src = reader.result;
+        } else {
+          currentData.images[index] = {
+            name: file.name,
+            src: reader.result,
+          };
+        }
+        imageData[index].file = file;
+        imageData[index].image = reader.result;
+      }
+      this.setState({
+        data: {
+          ...this.state.data,
+          [section]: currentData,
+        },
+        [section]: imageData,
+        file,
+      });
+    };
 
-	handleImageChange(e, section, index) {
-		console.log("imagehandle", section, index);
-		e.preventDefault();
+    reader.readAsDataURL(file);
+  }
 
-		let reader = new FileReader();
-		let file = e.target.files[0];
+  imageSubmitHandler = (e, section, index, mainIndex) => {
+    console.log("Image upload", section, index, this.state.file);
 
-		reader.onloadend = () => {
-			console.log("In reader");
-			let curValue = this.state[section];
-			curValue[index].image = reader.result;
-			curValue[index].file = file;
-			this.setState(
-				{
-					[section]: curValue,
-					imagePreviewUrl: reader.result,
-				},
-				console.log(this.state)
-			);
-		};
+    let formData = new FormData();
+    e.preventDefault();
+    if (
+      (section !== "banner" &&
+        this.state.data[section].images[index].src.length > 0) ||
+      this.state.data[section][mainIndex].images.src.length > 0
+    ) {
+      if (section === "banner") {
+        formData.append(
+          "imageName",
+          this.state.data[section][mainIndex].images.name
+        );
+      } else {
+        formData.append(
+          "imageName",
+          this.state.data[section].images[index].name
+        );
+      }
 
-		reader.readAsDataURL(file);
-	}
-	optionChange = (e) => {
-		this.setState({
-			imageName: e.target.value,
-		});
-		console.log("option change", e.target.name, e.target.value);
-	};
-	imageSubmitHandler = (e, section, index) => {
-		console.log("Image upload", section, index, this.state);
-		e.preventDefault();
-		if (this.state[section][index].image.length > 0) {
-			let formData = new FormData();
-			formData.append("imageName", this.state[section][index].imageName);
-			formData.append("image", this.state[section][index].file);
-			this.props
-				.uploadImage(formData)
-				.then((result) => {
-					cogoToast.success(result);
-					this.setState({
-						imageName: "",
-						file: "",
-						imagePreviewUrl: "",
-					});
-				})
-				.catch((err) => cogoToast.error(err));
-			console.log("image submit");
-		} else {
-			cogoToast.info("Please select an image");
-		}
-	};
+      formData.append("section", section);
+      formData.append("index", index);
+      formData.append("mainIndex", mainIndex);
+      formData.append("image", this.state.file);
+      this.setState({ loading: true });
+      this.props
+        .uploadImage(formData, section)
+        .then((result) => {
+          cogoToast.success(result);
+          let imageData = [...this.state[section]];
+          if (section === "banner") {
+            imageData[mainIndex].file = "";
+            imageData[mainIndex].image = "";
+          } else {
+            imageData[index].file = "";
+            imageData[index].image = "";
+          }
+          this.setState({
+            imageName: "",
+            file: "",
+            imagePreviewUrl: "",
+            [section]: imageData,
+            loading: false,
+          });
+          window.location.reload();
+        })
+        .catch((err) => {
+          this.setState({ loading: false });
+          console.log(err);
+          cogoToast.error(err);
+        });
+    } else {
+      cogoToast.info("Please select an image");
+    }
+  };
 
-	changeHandler = (name, section, data) => {
-		console.log(name, section, data);
-		let curValue = this.state.data[section];
-		curValue[name] = data;
-		this.setState(
-			{
-				section: curValue,
-			}
-			// console.log(this.state)
-		);
-		// console.log("change", event.target, section);
-	};
-	updateHandler = (event, section) => {
-		// console.log("updateHandler", section);
-		event.preventDefault();
-		this.props
-			.update(this.state.data[section], section)
-			.then((result) => {
-				cogoToast.success(result);
-			})
-			.catch((err) => cogoToast.error(err));
-	};
-	componentDidMount = () => {
-		// console.log("Component mounted");
-		this.props
-			.get()
-			.then((result) => {
-				cogoToast.success(result);
-				// console.log(this.props.data);
-				this.setState(
-					{
-						data: { ...this.props.data },
-						loading: false,
-					}
-					// console.log(this.state)
-				);
-			})
-			.catch((err) => {
-				cogoToast.error(err);
-			});
-	};
-	cardChange = (card) => {};
-	render() {
-		let data = Object.keys(this.state.data || {}).map((elem, index) => {
-			return (
-				<Card key={index}>
-					<Card.Header>
-						<Accordion.Toggle
-							as={Button}
-							variant="link"
-							eventKey={index}
-							onClick={() => this.cardChange(Heading[index])}
-							className="c-accordion"
-						>
-							<i class="fa fa-angle-down"></i>
-							{Heading[index]}
-						</Accordion.Toggle>
-					</Card.Header>
-					<Accordion.Collapse eventKey={index}>
-						<Card.Body>
-							<TextForm
-								field={this.state.data[elem]}
-								changeHandler={this.changeHandler}
-								sectionName={elem}
-								updateHandler={this.updateHandler}
-								subHeading={SubHeading[index]}
-							/>
-							{Images[index].length > 0 ? (
-								<ImageForm
-									Images={Images[index]}
-									sectionName={elem}
-									handleImageChange={this.handleImageChange}
-									imageSubmitHandler={this.imageSubmitHandler}
-									imagePreviewUrl={this.state[elem]}
-									optionChange={this.optionChange}
-								/>
-							) : null}
-						</Card.Body>
-					</Accordion.Collapse>
-				</Card>
-			);
-			// <Card>
-			// 	<Card.Header>
-			// 		<Accordion.Toggle as={Button} variant="link" eventKey="1">
-			// 			Click me!
-			// 		</Accordion.Toggle>
-			// 	</Card.Header>
-			// 	<Accordion.Collapse eventKey="1">
-			// 		<Card.Body>Hello! I'm another body</Card.Body>
-			// 	</Accordion.Collapse>
-			// </Card>
-		});
-		return (
-			<div>
-				{this.state.loading ? (
-					<div>
-						<div>
-							<Spinner
-								animation="border"
-								style={{ position: "fixed", top: "20%", left: "60%" }}
-								role="status"
-							>
-								<span className="sr-only">Loading...</span>
-							</Spinner>
-						</div>
-					</div>
-				) : (
-					<Accordion defaultActiveKey="0">{data}</Accordion>
-				)}
+  optionChange = (e) => {
+    this.setState({
+      imageName: e.target.value,
+    });
+    console.log("option change", e.target.name, e.target.value);
+  };
 
-				{/* <Card title="Home" isOption>
-					<Card.Header>Home</Card.Header>
-					<Card.Body>
-						<Card>
-							<Card.Title className="text-center">Banner</Card.Title>
-							<Card.Body>
-								<TextForm
-									field={this.state.banner}
-									changeHandler={this.changeHandler}
-									sectionName="banner"
-									updateHandler={this.updateHandler}
-								/>
-							</Card.Body>
-						</Card>
-						<Card>
-							<Card.Title className="text-center">CategorySlider</Card.Title>
-							<Card.Body>
-								<TextForm
-									field={this.state.categorySlider}
-									sectionName="categorySlider"
-									changeHandler={this.changeHandler}
-									updateHandler={this.updateHandler}
-								/>
-							</Card.Body>
-						</Card>
-						<Card>
-							<Card.Title className="text-center">ThirdSection</Card.Title>
-							<Card.Body>
-								<TextForm
-									field={this.state.thirdSection}
-									changeHandler={this.changeHandler}
-									sectionName="thirdSection"
-									updateHandler={this.updateHandler}
-								/>
-							</Card.Body>
-						</Card>
-						<Card>
-							<Card.Title className="text-center">BundlesSlider</Card.Title>
-							<Card.Body>
-								<TextForm
-									field={this.state.bundlesSlider}
-									changeHandler={this.changeHandler}
-									sectionName="bundlesSlider"
-									updateHandler={this.updateHandler}
-								/>
-							</Card.Body>
-						</Card>
-						<Card>
-							<Card.Title className="text-center">FifthSection</Card.Title>
-							<Card.Body>
-								<TextForm
-									field={this.state.fifthSection}
-									changeHandler={this.changeHandler}
-									sectionName="fifthSection"
-									updateHandler={this.updateHandler}
-								/>
-							</Card.Body>
-						</Card>
-					</Card.Body>
-				</Card> */}
-			</div>
-		);
-	}
+  changeHandler = (name, section, data, index) => {
+    console.log(name, section, data);
+    let curValue = this.state.data[section];
+    if (index || index === 0) {
+      // console.log("reached here");
+      curValue[index][name] = data;
+    } else {
+      // console.log("reached here 1");
+      curValue[name] = data;
+    }
+    this.setState({
+      section: curValue,
+    });
+    if (name === "hide") {
+      this.props
+        .update(curValue, section)
+        .then((result) => {
+          cogoToast.success(result);
+        })
+        .catch((err) => cogoToast.error(err));
+    }
+    // console.log("change", event.target, section);
+  };
+  updateHandler = (event, section) => {
+    // console.log("updateHandler", section);
+    this.setState({ loading: true });
+    event.preventDefault();
+    this.props
+      .update(this.state.data[section], section)
+      .then((result) => {
+        this.setState({ loading: false });
+        cogoToast.success(result);
+      })
+      .catch((err) => {
+        this.setState({ loading: false });
+        cogoToast.error(err);
+      });
+  };
+
+  componentDidUpdate = (prevProps, prevState) => {
+    if (
+      prevProps.data.banner &&
+      prevProps.data.banner.length !== this.props.data.banner.length
+    ) {
+      console.log("Updated");
+      let answer = this.createData();
+      this.setState({
+        data: answer.data,
+        banner: answer.newArray,
+      });
+    }
+  };
+
+  createData = () => {
+    return {
+      newArray: new Array(this.props.data.banner.length).fill({
+        image: "",
+        file: "",
+        imageName: "",
+      }),
+      data: {
+        logo: {
+          ...this.props.data.logo,
+        },
+        banner: [...this.props.data.banner],
+        categorySlider: {
+          ...this.props.data.categorySlider,
+        },
+        secondSection: {
+          ...this.props.data.secondSection,
+        },
+        thirdSection: {
+          ...this.props.data.thirdSection,
+        },
+        fourthSection: {
+          ...this.props.data.fourthSection,
+        },
+      },
+    };
+  };
+
+  componentDidMount = () => {
+    this.props
+      .get()
+      .then((result) => {
+        let answer = this.createData();
+        this.setState({
+          loading: false,
+          data: answer.data,
+          banner: answer.newArray,
+        });
+        cogoToast.success(result);
+      })
+      .catch((err) => {
+        cogoToast.error(err);
+      });
+  };
+  cardChange = (card) => {};
+  closeModal = () => {
+    this.setState({
+      isOpen: false,
+      formData: {
+        title: "",
+        content: "",
+        btntext: "",
+        hide: false,
+        images: [],
+      },
+    });
+  };
+
+  submitModal = (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    Object.keys(this.state.formData).forEach((key) =>
+      formData.append(key, this.state.formData[key])
+    );
+    formData.append("image", this.state.file);
+    formData.append("addBanner", true);
+    this.setState({
+      loading: true,
+      isOpen: false,
+      formData: {
+        title: "",
+        content: "",
+        btntext: "",
+        hide: false,
+      },
+    });
+    this.props
+      .uploadImage(formData, "banner")
+      .then((result) => {
+        this.setState({ loading: false });
+        cogoToast.success(result);
+      })
+      .catch((err) => {
+        this.setState({ loading: false });
+        cogoToast.error(err);
+      });
+  };
+
+  callback = (key) => console.log(key);
+
+  deleteBanner = (e, section, index) => {
+    e.preventDefault();
+    let currentData = [...this.state.data.banner];
+    currentData.splice(index, 1);
+    this.setState({ loading: true });
+    this.props
+      .update(currentData, "banner")
+      .then((result) => {
+        this.setState({ loading: false });
+        cogoToast.success(result);
+      })
+      .catch((err) => {
+        this.setState({ loading: false });
+        cogoToast.error(err);
+      });
+  };
+
+  render() {
+    console.log(this.props.data);
+    let data = Object.keys(this.props.data || {}).map((elem, index) => {
+      let element = { ...this.state.data[elem] };
+      element[0] ? console.log("") : delete element.hide;
+      delete element.images;
+      let newSubheadings = Object.keys(element).map(
+        (elem) => elem[0].toUpperCase() + elem.substring(1)
+      );
+      let mainTitle = "";
+      switch (elem) {
+        case "banner":
+          mainTitle = "Banner";
+          break;
+        case "logo":
+          mainTitle = "Logo";
+          break;
+        case "categorySlider":
+          mainTitle = "Category Slider";
+          break;
+        case "secondSection":
+          mainTitle = "Second Section";
+          break;
+        case "thirdSection":
+          mainTitle = "Third Section";
+          break;
+        case "fourthSection":
+          mainTitle = "Fourth Section";
+          break;
+        default:
+          mainTitle = "";
+      }
+      return (
+        <Card key={index}>
+          <Card.Header>
+            <Accordion.Toggle
+              as={Button}
+              variant="link"
+              eventKey={`${index}`}
+              onClick={() => this.cardChange(Heading[index])}
+              className="c-accordion"
+            >
+              <i className="fa fa-angle-down"></i>
+              {mainTitle}
+            </Accordion.Toggle>
+            {mainTitle !== "Logo" && (
+              <Form.Check
+                checked={this.state.data[elem].hide}
+                type="checkbox"
+                label="Hide"
+                onChange={(e) =>
+                  this.changeHandler("hide", elem, e.target.checked)
+                }
+                style={{
+                  display: "inline-block",
+                  marginLeft: "auto",
+                }}
+              />
+            )}
+            {mainTitle === "Banner" && (
+              <Button
+                onClick={() => this.setState({ isOpen: true })}
+                style={{ marginLeft: "20px", display: "inline" }}
+              >
+                <i className="fa fa-plus"></i>Add Banner
+              </Button>
+            )}
+          </Card.Header>
+          {mainTitle !== "Banner" ? (
+            <Accordion.Collapse eventKey={`${index}`}>
+              <Card.Body>
+                {SubHeading[index] !== undefined ? (
+                  <TextForm
+                    field={element[0] ? element[0] : element}
+                    changeHandler={this.changeHandler}
+                    sectionName={elem}
+                    updateHandler={this.updateHandler}
+                    subHeading={newSubheadings}
+                  />
+                ) : null}
+                {this.state.data[elem].images !== undefined ? (
+                  <ImageForm
+                    Images={this.props.data[elem].images}
+                    sectionName={elem}
+                    handleImageChange={this.handleImageChange}
+                    imagePreviewUrl={this.state[elem]}
+                    optionChange={this.optionChange}
+                    img={this.state.imagePreviewUrl}
+                    // isCategory={true}
+                    currentIndex={this.state[elem]}
+                    imageSubmitHandler={this.imageSubmitHandler}
+                  />
+                ) : null}
+              </Card.Body>
+            </Accordion.Collapse>
+          ) : (
+            <Accordion.Collapse eventKey={`${index}`}>
+              <Card.Body>
+                <Collapse onChange={this.callback}>
+                  {this.state.data[elem].map((elem1, index1) => {
+                    let element1 = { ...elem1 };
+                    delete element1.hide;
+                    delete element1.images;
+                    return (
+                      // <>
+                      <Panel
+                        header={`Banner ${index1 + 1}`}
+                        key={`${index}_${index1}`}
+                      >
+                        <TextForm
+                          field={element1}
+                          changeHandler={this.changeHandler}
+                          sectionName={elem}
+                          updateHandler={this.updateHandler}
+                          subHeading={["Title", "Content", "Button Text"]}
+                          index={index1}
+                          hasDelete={true}
+                          deleteHandler={this.deleteBanner}
+                        />
+                        <ImageForm
+                          Images={[{ ...this.state.data[elem][index1].images }]}
+                          sectionName={elem}
+                          handleImageChange={this.handleImageChange}
+                          imagePreviewUrl={[{ ...this.state[elem][index1] }]}
+                          optionChange={this.optionChange}
+                          img={this.state.imagePreviewUrl}
+                          // isCategory={true}
+                          mainIndex={index1}
+                          imageSubmitHandler={this.imageSubmitHandler}
+                        />
+                      </Panel>
+
+                      // </>
+                    );
+                  })}
+                </Collapse>
+              </Card.Body>
+            </Accordion.Collapse>
+          )}
+        </Card>
+      );
+    });
+    // console.log("check data", data);
+    return (
+      <div>
+        {this.state.loading ? (
+          <div>
+            <div>
+              <Spinner
+                animation="border"
+                style={{ position: "fixed", top: "20%", left: "60%" }}
+                role="status"
+              >
+                <span className="sr-only">Loading...</span>
+              </Spinner>
+            </div>
+          </div>
+        ) : (
+          <>
+            <Modal show={this.state.isOpen}>
+              <Modal.Header closeButton onClick={this.closeModal}>
+                <Modal.Title>Add Banner</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                <Form onSubmit={this.submitModal}>
+                  <Form.Label>Title</Form.Label>
+                  <AceEditor
+                    value={this.state.formData.title}
+                    onChange={(code) => {
+                      const currentData = { ...this.state.formData };
+                      currentData.title = code;
+                      this.setState({ formData: currentData });
+                    }}
+                    mode="javascript"
+                    theme="chrome"
+                    placeholder="Enter Banner Title"
+                    style={{
+                      width: "100%",
+                      height: "100px",
+                      marginBottom: "10px",
+                    }}
+                    setOptions={{
+                      fontSize: 20,
+                    }}
+                  />
+
+                  <Form.Label>Content</Form.Label>
+                  <AceEditor
+                    value={this.state.formData.content}
+                    onChange={(code) => {
+                      const currentData = { ...this.state.formData };
+                      currentData.content = code;
+                      this.setState({ formData: currentData });
+                    }}
+                    mode="javascript"
+                    theme="chrome"
+                    placeholder="Enter Banner Content"
+                    style={{
+                      width: "100%",
+                      height: "100px",
+                      marginBottom: "10px",
+                    }}
+                    setOptions={{
+                      fontSize: 20,
+                    }}
+                  />
+
+                  <Form.Label>Button text</Form.Label>
+                  <AceEditor
+                    value={this.state.formData.btnText}
+                    onChange={(code) => {
+                      const currentData = { ...this.state.formData };
+                      currentData.btnText = code;
+                      this.setState({ formData: currentData });
+                    }}
+                    mode="javascript"
+                    theme="chrome"
+                    placeholder="Enter Button Text"
+                    style={{
+                      width: "100%",
+                      height: "100px",
+                      marginBottom: "10px",
+                    }}
+                    setOptions={{
+                      fontSize: 20,
+                    }}
+                  />
+
+                  <Form.Check
+                    checked={this.state.formData.hide}
+                    type="checkbox"
+                    label="Hide"
+                    onChange={(e) => {
+                      const currentData = { ...this.state.formData };
+                      currentData.hide = e.target.checked;
+                      this.setState({ formData: currentData });
+                    }}
+                    style={{
+                      display: "inline-block",
+                      marginLeft: "auto",
+                    }}
+                  />
+
+                  <Form.Group>
+                    <Form.Label style={{ display: "block" }}>
+                      Banner Image
+                    </Form.Label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        let reader = new FileReader();
+                        let file = e.target.files[0];
+                        reader.onloadend = () => {
+                          this.setState({ file });
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </Form.Group>
+
+                  <Button variant="primary" type="submit">
+                    Submit
+                  </Button>
+                </Form>
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="secondary" onClick={this.closeModal}>
+                  Close
+                </Button>
+              </Modal.Footer>
+            </Modal>
+
+            <Accordion defaultActiveKey="0">{data}</Accordion>
+          </>
+        )}
+      </div>
+    );
+  }
 }
 
 const mapStateToProps = (state) => {
-	return {
-		data: state.homeReducer,
-	};
+  return {
+    data: state.homeReducer.homeData,
+    firstLoad: state.homeReducer.homeFirstLoad,
+  };
 };
 
 const mapDispatchToProps = (dispatch) => {
-	return {
-		get: () => dispatch(actionCreators.get()),
-		update: (data, section) => dispatch(actionCreators.update(data, section)),
-		uploadImage: (data) => dispatch(actionCreators.uploadImage(data)),
-	};
+  return {
+    get: () => dispatch(actionCreators.get()),
+    update: (data, section) => dispatch(actionCreators.update(data, section)),
+    uploadImage: (formData, section) =>
+      dispatch(actionCreators.updloadImage(formData, section)),
+  };
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(Home);
